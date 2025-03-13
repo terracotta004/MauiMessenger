@@ -14,8 +14,6 @@ public class ChatViewModel
     private void SendMessage(string text)
     {
         Messages.Add(new Message { Text = text });
-
-        return;
     }
 }
 
