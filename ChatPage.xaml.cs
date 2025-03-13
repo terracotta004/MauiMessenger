@@ -5,7 +5,7 @@
         public ChatPage()
         {
             InitializeComponent();
-            BindingContext = new ChatViewModel();
+            BindingContext = new ChatViewModel(MessageEntry);
         }
     }
 }

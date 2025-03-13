@@ -6,14 +6,16 @@ public class ChatViewModel
     public ObservableCollection<Message> Messages { get; set; } = new();
     public ICommand SendMessageCommand { get; }
 
-    public ChatViewModel()
+    public ChatViewModel(Entry entry)
     {
-        SendMessageCommand = new Command(SendMessage);
+        SendMessageCommand = new Command(() => SendMessage(entry.Text));
     }
 
-    private void SendMessage()
+    private void SendMessage(string text)
     {
-        Messages.Add(new Message { Text = "Hello, world!" });
+        Messages.Add(new Message { Text = text });
+
+        return;
     }
 }
 
