@@ -35,6 +35,7 @@
 | `Message` | `Id` (GUID), `ConversationId`, `SenderId`, `Text`, `CreatedUtc`, `Status` (`Pending`, `Sent`, `Delivered`, `Failed`), `ReplyToMessageId?`, `Attachments` | Core chat payload; supports threading/replies and status updates. |
 | `Attachment` | `Id`, `MessageId`, `Type` (image/file/audio), `Uri`, `ThumbnailUri?`, `SizeBytes` | Stored separately so messages can have zero or more attachments. |
 | `TypingIndicator` | `ConversationId`, `UserId`, `IsTyping`, `ExpiresUtc` | Optional real-time UX element; can be transient (memory-only). |
+| `ConversationParticipant` | `ConversationId`, `UserId`, `Role` (`Owner`, `Moderator`, `Member`), `MutedUntilUtc?`, `IsBanned` | Captures group membership and permissions for moderation actions. |
 
 ### Repository Interfaces
 - `IMessageRepository`
@@ -57,3 +58,9 @@
 - **Validation**: Services enforce max lengths, prevent empty messages, and normalize whitespace before persistence.
 - **Sync Strategy**: Use client-generated IDs and timestamps to merge remote and local histories; conflicts resolved by server timestamp precedence.
 - **Telemetry & Logging**: Wrap platform logging to capture message failures, retries, and navigation events for diagnostics.
+- **Moderation & Administration**:
+  - Model group membership via `ConversationParticipant` with roles. `Owner` can appoint/demote moderators; `Moderator` can remove members, mute users, or delete messages; `Member` has standard posting rights.
+  - Surface moderation commands through `IChatService` (e.g., `BanAsync`, `MuteAsync`, `RemoveMessageAsync`) so view models stay thin and policies remain server/infra agnostic.
+  - Enforce permissions in services before invoking repositories or remote clients; repositories should reject persistence of moderated content (e.g., banned user posting) and record audit metadata.
+  - Support soft-delete flags on messages for moderator removals while keeping audit trails; UI can render placeholders such as "message removed by moderator".
+  - Consider rate limits and spam heuristics in `IRemoteChatClient`/backend; expose throttling feedback to the UI via observable status.
