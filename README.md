@@ -51,27 +51,8 @@ use this command to port forward. Replace 'ben@pi-ubuntu' with the right user an
 ssh -N -L 15432:127.0.0.1:5432 ben@pi-ubuntu
 ```
 
-Now, run `migrate.ps1` in PowerShell to prepare your database (located in project root):
-
-```powershell
-.\migrate.ps1
-```
+Now, run `migrate-macos.ps1` or `migrate-windows.ps1` in PowerShell to prepare your database (located in project root):
 
 Now run the API + Client.Web in your chosen IDE (Rider, Visual Studio, Visual Studio Code). 
 
 Rider Multi-Launch Configuration: https://www.jetbrains.com/help/rider/Run_Debug_Multiple.html#multi_launch
-
-
-## Move this repository to a new GitHub project
-
-Use the helper script to push this full repository (all branches + tags) to a `MauiMessenger` repository on GitHub:
-
-```bash
-./scripts/push-to-maui-github.sh git@github.com:<your-user-or-org>/MauiMessenger.git main
-```
-
-If you prefer HTTPS:
-
-```bash
-./scripts/push-to-maui-github.sh https://github.com/<your-user-or-org>/MauiMessenger.git main
-```
