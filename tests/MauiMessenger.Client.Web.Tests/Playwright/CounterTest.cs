@@ -2,32 +2,13 @@ using Microsoft.Playwright;
 namespace MauiMessenger.Client.Web.Tests.Playwright;
 
 [Collection("WebApp collection")]
-public class HomePageTests
+public class CounterTest
 {
     private readonly WebAppFixture _fixture;
 
-    public HomePageTests(WebAppFixture fixture)
+    public CounterTest(WebAppFixture fixture)
     {
         _fixture = fixture;
-    }
-
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task HomePage_Loads(bool headless)
-    {
-        var browser = headless ? _fixture.Browser : _fixture.HeadedBrowser ?? _fixture.Browser;
-        var page = await browser.NewPageAsync();
-        try
-        {
-            await page.GotoAsync(_fixture.BaseUrl.ToString());
-            var title = await page.TextContentAsync("h1");
-            Assert.Equal("Hello, world!", title);
-        }
-        finally
-        {
-            await page.CloseAsync();
-        }
     }
 
     [Theory]

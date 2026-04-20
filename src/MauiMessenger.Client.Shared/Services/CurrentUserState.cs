@@ -22,7 +22,19 @@ public sealed class CurrentUserState
             return;
         }
 
-        var user = await authSessionClient.GetCurrentUserAsync(cancellationToken);
-        SetUser(user);
+        try
+        {
+            var user = await authSessionClient.GetCurrentUserAsync(cancellationToken);
+            SetUser(user);
+        }
+        catch (Exception ex) when (IsRecoverableSessionLoadFailure(ex, cancellationToken))
+        {
+            SetUser(null);
+        }
     }
+
+    private static bool IsRecoverableSessionLoadFailure(Exception exception, CancellationToken cancellationToken)
+        => exception is HttpRequestException
+            || exception is InvalidOperationException
+            || exception is TaskCanceledException && !cancellationToken.IsCancellationRequested;
 }
