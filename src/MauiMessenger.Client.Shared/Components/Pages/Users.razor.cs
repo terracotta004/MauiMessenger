@@ -12,6 +12,7 @@ public partial class Users
     private List<UserDto>? users;
     private CreateUserForm newUser = new();
     private bool isSaving;
+    private Guid? deletingUserId;
     private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
@@ -49,6 +50,26 @@ public partial class Users
         finally
         {
             isSaving = false;
+        }
+    }
+
+    private async Task DeleteUserAsync(UserDto user)
+    {
+        errorMessage = null;
+        deletingUserId = user.Id;
+
+        try
+        {
+            await ApiClient.DeleteUserAsync(user.Id);
+            await LoadUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            deletingUserId = null;
         }
     }
 

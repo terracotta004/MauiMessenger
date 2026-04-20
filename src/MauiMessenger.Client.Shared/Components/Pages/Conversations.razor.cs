@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using MauiMessenger.Client.Shared.Services;
 using MauiMessenger.Core.DTOs;
+using MauiMessenger.Core.Entities;
 
 namespace MauiMessenger.Client.Shared.Components.Pages;
 
@@ -23,18 +24,30 @@ public partial class Conversations
     private bool isSaving;
     private bool isLoadingMessages;
     private bool isSending;
+    private Guid? deletingMessageId;
     private string? errorMessage;
     private NewConversationForm newConversation = new();
     private NewMessageForm newMessage = new();
     private ElementReference messageListElement;
     private bool shouldScrollMessagesToBottom;
+    private bool isRealtimeConnected;
 
     private IEnumerable<UserDto> availableUsers
         => users.Where(u => CurrentUserState.CurrentUser is null || u.Id != CurrentUserState.CurrentUser.Id);
 
+    private bool canSendToSelectedConversation
+        => selectedConversation is not null && !IsHumanObserverInAgentConversation(selectedConversation);
+
+    private string? selectedConversationSendRestriction
+        => selectedConversation is not null && IsHumanObserverInAgentConversation(selectedConversation)
+            ? "Human observers can view agent-to-agent conversations, but cannot send messages."
+            : null;
+
     protected override async Task OnInitializedAsync()
     {
         RealtimeClient.MessageReceived += OnMessageReceivedAsync;
+        RealtimeClient.MessageDeleted += OnMessageDeletedAsync;
+        RealtimeClient.ConversationUpdated += OnConversationUpdatedAsync;
         await LoadAsync();
     }
 
@@ -58,6 +71,8 @@ public partial class Conversations
             conversations.Clear();
             var fetched = await ApiClient.GetConversationsByUserAsync(CurrentUserState.CurrentUser.Id);
             conversations.AddRange(fetched.OrderByDescending(c => c.UpdatedAt));
+
+            await EnsureHubConnectedAsync();
         }
         catch (Exception ex)
         {
@@ -67,6 +82,32 @@ public partial class Conversations
         finally
         {
             isLoading = false;
+        }
+    }
+
+    private async Task DeleteMessageAsync(MessageDto message)
+    {
+        if (CurrentUserState.CurrentUser is null || message.SenderId != CurrentUserState.CurrentUser.Id || message.IsDeleted)
+        {
+            return;
+        }
+
+        try
+        {
+            deletingMessageId = message.Id;
+            errorMessage = null;
+
+            var deleted = await ApiClient.DeleteMessageAsync(message.Id);
+            UpsertMessage(deleted);
+        }
+        catch (Exception ex)
+        {
+            HandleSessionExpired(ex);
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            deletingMessageId = null;
         }
     }
 
@@ -95,7 +136,7 @@ public partial class Conversations
             var request = new CreateConversationRequest(title, participantIds);
             var created = await ApiClient.CreateConversationAsync(request);
 
-            conversations.Insert(0, created);
+            UpsertConversation(created);
             newConversation = new NewConversationForm();
             await OpenConversationAsync(created.Id);
         }
@@ -171,6 +212,12 @@ public partial class Conversations
             return;
         }
 
+        if (!canSendToSelectedConversation)
+        {
+            errorMessage = selectedConversationSendRestriction ?? "You cannot send messages in this conversation.";
+            return;
+        }
+
         try
         {
             isSending = true;
@@ -202,8 +249,14 @@ public partial class Conversations
 
     private async Task EnsureHubConnectedAsync()
     {
+        if (isRealtimeConnected)
+        {
+            return;
+        }
+
         var token = await ApiClient.GetRealtimeTokenAsync();
         await RealtimeClient.ConnectAsync(ApiClient.BaseAddress, token.AccessToken);
+        isRealtimeConnected = true;
     }
 
     private Task OnMessageReceivedAsync(MessageDto message)
@@ -225,6 +278,55 @@ public partial class Conversations
             StateHasChanged();
             await Task.CompletedTask;
         });
+    }
+
+    private Task OnMessageDeletedAsync(MessageDto message)
+    {
+        if (selectedConversationId != message.ConversationId)
+        {
+            return Task.CompletedTask;
+        }
+
+        UpsertMessage(message);
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnConversationUpdatedAsync(ConversationDto conversation)
+    {
+        UpsertConversation(conversation);
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private void UpsertConversation(ConversationDto conversation)
+    {
+        var index = conversations.FindIndex(existing => existing.Id == conversation.Id);
+        if (index >= 0)
+        {
+            conversations[index] = conversation;
+        }
+        else
+        {
+            conversations.Add(conversation);
+        }
+
+        conversations.Sort((left, right) => right.UpdatedAt.CompareTo(left.UpdatedAt));
+
+        if (selectedConversationId == conversation.Id)
+        {
+            selectedConversation = conversation;
+        }
+    }
+
+    private void UpsertMessage(MessageDto message)
+    {
+        var index = messages.FindIndex(existing => existing.Id == message.Id);
+        if (index >= 0)
+        {
+            messages[index] = message;
+            return;
+        }
+
+        messages.Add(message);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -311,9 +413,30 @@ public partial class Conversations
         return user is null ? userId.ToString() : user.DisplayName;
     }
 
+    private bool IsHumanObserverInAgentConversation(ConversationDto conversation)
+    {
+        if (CurrentUserState.CurrentUser?.ParticipantType != ParticipantType.Human)
+        {
+            return false;
+        }
+
+        if (!conversation.ParticipantIds.Contains(CurrentUserState.CurrentUser.Id))
+        {
+            return false;
+        }
+
+        var agentCount = conversation.ParticipantIds
+            .Select(id => users.FirstOrDefault(user => user.Id == id))
+            .Count(user => user?.ParticipantType == ParticipantType.Agent);
+
+        return agentCount >= 2;
+    }
+
     public async ValueTask DisposeAsync()
     {
         RealtimeClient.MessageReceived -= OnMessageReceivedAsync;
+        RealtimeClient.MessageDeleted -= OnMessageDeletedAsync;
+        RealtimeClient.ConversationUpdated -= OnConversationUpdatedAsync;
         await RealtimeClient.DisposeAsync();
     }
 

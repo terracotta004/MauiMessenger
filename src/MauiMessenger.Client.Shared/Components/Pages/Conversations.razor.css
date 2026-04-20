@@ -111,10 +111,27 @@
     border-color: rgba(14, 165, 233, 0.22);
 }
 
+.message-row.is-deleted .message-bubble {
+    background: #f1f5f9;
+    border-style: dashed;
+    box-shadow: none;
+}
+
 .message-content {
     white-space: pre-wrap;
     word-break: break-word;
     margin-top: 0.2rem;
+}
+
+.message-row.is-deleted .message-content {
+    color: #64748b;
+    font-style: italic;
+}
+
+.message-delete-button {
+    padding: 0;
+    font-size: 0.78rem;
+    text-decoration: none;
 }
 
 .message-compose {

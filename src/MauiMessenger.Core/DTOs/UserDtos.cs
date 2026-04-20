@@ -17,3 +17,8 @@ public sealed record UserDto(
     ParticipantType ParticipantType,
     DateTime CreatedAt,
     DateTime UpdatedAt);
+
+public sealed record RegisterAgentRequest(
+    string Identity,
+    string DisplayName,
+    string? Email = null);

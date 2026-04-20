@@ -13,3 +13,21 @@ public sealed record MessageDto(
     DateTime SentAt,
     DateTime? EditedAt,
     bool IsDeleted);
+
+public sealed record AgentMessageRequest(
+    string Id,
+    string From,
+    string To,
+    string Subject,
+    string Body,
+    DateTimeOffset SentAtUtc,
+    IReadOnlyDictionary<string, string>? Metadata);
+
+public sealed record AgentMessageDto(
+    string Id,
+    string From,
+    string To,
+    string Subject,
+    string Body,
+    DateTimeOffset SentAtUtc,
+    IReadOnlyDictionary<string, string> Metadata);

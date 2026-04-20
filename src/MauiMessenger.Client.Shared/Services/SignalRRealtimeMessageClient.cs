@@ -10,6 +10,8 @@ public sealed class SignalRRealtimeMessageClient : IRealtimeMessageClient
     private string? _accessToken;
 
     public event Func<MessageDto, Task>? MessageReceived;
+    public event Func<MessageDto, Task>? MessageDeleted;
+    public event Func<ConversationDto, Task>? ConversationUpdated;
 
     public async Task ConnectAsync(Uri apiBaseAddress, string accessToken, CancellationToken cancellationToken = default)
     {
@@ -39,7 +41,7 @@ public sealed class SignalRRealtimeMessageClient : IRealtimeMessageClient
         _hubConnection = new HubConnectionBuilder()
             .WithUrl(hubUrl, options =>
             {
-                options.AccessTokenProvider = () => Task.FromResult(_accessToken);
+                options.AccessTokenProvider = () => Task.FromResult<string?>(_accessToken);
             })
             .WithAutomaticReconnect()
             .Build();
@@ -48,6 +50,18 @@ public sealed class SignalRRealtimeMessageClient : IRealtimeMessageClient
         {
             var handler = MessageReceived;
             return handler is null ? Task.CompletedTask : handler(message);
+        });
+
+        _hubConnection.On<MessageDto>("MessageDeleted", message =>
+        {
+            var handler = MessageDeleted;
+            return handler is null ? Task.CompletedTask : handler(message);
+        });
+
+        _hubConnection.On<ConversationDto>("ConversationUpdated", conversation =>
+        {
+            var handler = ConversationUpdated;
+            return handler is null ? Task.CompletedTask : handler(conversation);
         });
 
         _hubConnection.Reconnected += async _ =>

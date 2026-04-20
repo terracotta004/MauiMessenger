@@ -28,6 +28,12 @@ public class ApiClient : IApiClient
             ?? throw new InvalidOperationException("API returned an empty response.");
     }
 
+    public virtual async Task DeleteUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.DeleteAsync($"api/users/{userId}", cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
     public virtual async Task<UserDto> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync("api/auth/login", request, cancellationToken);
@@ -101,6 +107,16 @@ public class ApiClient : IApiClient
         CancellationToken cancellationToken = default)
     {
         var response = await _httpClient.PostAsJsonAsync("api/messages", request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<MessageDto>(cancellationToken: cancellationToken)
+            ?? throw new InvalidOperationException("API returned an empty response.");
+    }
+
+    public virtual async Task<MessageDto> DeleteMessageAsync(
+        Guid messageId,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.DeleteAsync($"api/messages/{messageId}", cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<MessageDto>(cancellationToken: cancellationToken)
             ?? throw new InvalidOperationException("API returned an empty response.");

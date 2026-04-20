@@ -28,13 +28,18 @@ public sealed class FakeHubClients : IHubClients
         return ClientProxy;
     }
     public IClientProxy GroupExcept(string groupName, IReadOnlyList<string> excludedConnectionIds) => throw new NotImplementedException();
-    public IClientProxy Groups(IReadOnlyList<string> groupNames) => throw new NotImplementedException();
+    public IClientProxy Groups(IReadOnlyList<string> groupNames)
+    {
+        ClientProxy.LastGroup = string.Join(",", groupNames);
+        return ClientProxy;
+    }
     public IClientProxy User(string userId) => throw new NotImplementedException();
     public IClientProxy Users(IReadOnlyList<string> userIds) => throw new NotImplementedException();
 }
 
 public sealed class FakeClientProxy : IClientProxy
 {
+    public List<FakeHubCall> Calls { get; } = new();
     public string? LastMethod { get; private set; }
     public object?[]? LastArgs { get; private set; }
     public string? LastGroup { get; set; }
@@ -43,9 +48,12 @@ public sealed class FakeClientProxy : IClientProxy
     {
         LastMethod = method;
         LastArgs = args;
+        Calls.Add(new FakeHubCall(LastGroup, method, args));
         return Task.CompletedTask;
     }
 }
+
+public sealed record FakeHubCall(string? Group, string Method, object?[] Args);
 
 public sealed class FakeGroupManager : IGroupManager
 {

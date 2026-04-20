@@ -17,17 +17,22 @@ public class MessageHub : Hub
         _realtimeTokenService = realtimeTokenService;
     }
 
-    public override Task OnConnectedAsync()
+    public override async Task OnConnectedAsync()
     {
         var token = GetAccessToken();
         if (!_realtimeTokenService.TryValidateToken(token, out var userId))
         {
             Context.Abort();
-            return Task.CompletedTask;
+            return;
         }
 
         Context.Items["UserId"] = userId;
-        return base.OnConnectedAsync();
+        await Groups.AddToGroupAsync(
+            Context.ConnectionId,
+            GetUserGroup(userId),
+            Context.ConnectionAborted);
+
+        await base.OnConnectedAsync();
     }
 
     public async Task JoinConversation(Guid conversationId)
@@ -85,4 +90,7 @@ public class MessageHub : Hub
         userId = Guid.Empty;
         return false;
     }
+
+    public static string GetUserGroup(Guid userId)
+        => $"user:{userId}";
 }

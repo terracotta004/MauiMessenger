@@ -1,16 +1,22 @@
 using MauiMessenger.Core.DTOs;
 using MauiMessenger.Core.Entities;
 using MauiMessenger.Core.Interfaces;
+using MauiMessenger.Api.Hubs;
+using Microsoft.AspNetCore.SignalR;
 
 namespace MauiMessenger.Api.Services;
 
 public class ConversationService : IConversationService
 {
     private readonly IConversationRepository _conversationRepository;
+    private readonly IHubContext<MessageHub> _hubContext;
 
-    public ConversationService(IConversationRepository conversationRepository)
+    public ConversationService(
+        IConversationRepository conversationRepository,
+        IHubContext<MessageHub> hubContext)
     {
         _conversationRepository = conversationRepository;
+        _hubContext = hubContext;
     }
 
     public async Task<ConversationDto> CreateAsync(CreateConversationRequest request, CancellationToken cancellationToken = default)
@@ -41,7 +47,9 @@ public class ConversationService : IConversationService
         }
 
         var saved = await _conversationRepository.AddAsync(conversation, cancellationToken);
-        return ToDto(saved);
+        var dto = ToDto(saved);
+        await BroadcastConversationUpdatedAsync(dto, cancellationToken);
+        return dto;
     }
 
     public async Task<ConversationDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -60,5 +68,22 @@ public class ConversationService : IConversationService
     {
         var participants = conversation.ConversationUsers.Select(cu => cu.UserId).ToList();
         return new ConversationDto(conversation.Id, conversation.Title, conversation.CreatedAt, conversation.UpdatedAt, participants);
+    }
+
+    private async Task BroadcastConversationUpdatedAsync(
+        ConversationDto conversation,
+        CancellationToken cancellationToken)
+    {
+        var groups = conversation.ParticipantIds
+            .Select(MessageHub.GetUserGroup)
+            .ToList();
+
+        if (groups.Count == 0)
+        {
+            return;
+        }
+
+        await _hubContext.Clients.Groups(groups)
+            .SendAsync("ConversationUpdated", conversation, cancellationToken);
     }
 }

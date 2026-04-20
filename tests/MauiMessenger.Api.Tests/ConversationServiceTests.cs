@@ -1,6 +1,8 @@
 using MauiMessenger.Api.Services;
 using MauiMessenger.Api.Tests.Fakes;
+using MauiMessenger.Api.Hubs;
 using MauiMessenger.Core.DTOs;
+using MauiMessenger.Core.Entities;
 
 namespace MauiMessenger.Api.Tests;
 
@@ -10,7 +12,8 @@ public class ConversationServiceTests
     public async Task CreateAsync_DeduplicatesParticipantsAndSetsConversationId()
     {
         var repository = new FakeConversationRepository();
-        var service = new ConversationService(repository);
+        var hubContext = new FakeHubContext<MessageHub>();
+        var service = new ConversationService(repository, hubContext);
         var userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var request = new CreateConversationRequest(" Team Chat ", new[] { userId, userId });
 
@@ -27,7 +30,8 @@ public class ConversationServiceTests
     public async Task ListByUserIdAsync_ReturnsConversationsForUser()
     {
         var repository = new FakeConversationRepository();
-        var service = new ConversationService(repository);
+        var hubContext = new FakeHubContext<MessageHub>();
+        var service = new ConversationService(repository, hubContext);
         var userId = Guid.NewGuid();
         var request = new CreateConversationRequest("Chat", new[] { userId });
 
@@ -39,4 +43,5 @@ public class ConversationServiceTests
         Assert.Equal("Chat", conversations[0].Title);
         Assert.Contains(userId, conversations[0].ParticipantIds);
     }
+
 }

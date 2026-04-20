@@ -12,10 +12,10 @@ public class ConversationsControllerTests : IClassFixture<ApiWebApplicationFacto
     }
 
     [Fact]
-    public async Task ListByUser_RequiresUserId()
+    public async Task ListByUser_RequiresAuthentication()
     {
         var response = await _client.GetAsync("/api/conversations");
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }

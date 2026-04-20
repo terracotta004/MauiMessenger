@@ -67,6 +67,12 @@ else
                 <div class="d-flex gap-2 align-items-center">
                     <span class="badge bg-primary">@user.ParticipantType</span>
                     <span class="badge bg-secondary">@user.Id</span>
+                    <button class="btn btn-sm btn-outline-danger"
+                            type="button"
+                            disabled="@(deletingUserId == user.Id)"
+                            @onclick="() => DeleteUserAsync(user)">
+                        @(deletingUserId == user.Id ? "Deleting..." : "Delete")
+                    </button>
                 </div>
             </li>
         }

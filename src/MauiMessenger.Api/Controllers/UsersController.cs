@@ -58,4 +58,28 @@ public class UsersController : ControllerBase
             return ValidationProblem(ModelState);
         }
     }
+
+    [AllowAnonymous]
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _userService.DeleteAsync(id, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+        {
+            return NotFound();
+        }
+        catch (IdentityOperationException exception)
+        {
+            foreach (var error in exception.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error);
+            }
+
+            return ValidationProblem(ModelState);
+        }
+    }
 }

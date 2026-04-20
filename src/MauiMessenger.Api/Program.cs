@@ -41,14 +41,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
 builder.Services
     .AddIdentity<User, IdentityRole<Guid>>(options =>
     {
-        options.Password.RequireDigit = false;
-        options.Password.RequiredLength = 4;
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequireUppercase = false;
-        options.Password.RequireLowercase = false;
-        options.SignIn.RequireConfirmedAccount = false;
-        options.SignIn.RequireConfirmedEmail = false;
-        options.User.RequireUniqueEmail = true;
+        options.ConfigureMauiMessengerIdentity();
     })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
@@ -70,6 +63,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddSingleton<IRealtimeTokenService, DataProtectionRealtimeTokenService>();
+builder.Services.Configure<AgentMessengerOptions>(builder.Configuration.GetSection("AgentMessenger"));
 
 var app = builder.Build();
 

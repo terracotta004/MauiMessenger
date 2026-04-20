@@ -51,6 +51,50 @@ public class UserServiceTests
         Assert.Equal("bob@example.com", users[0].Email);
     }
 
+    [Fact]
+    public async Task RegisterAgentAsync_AllowsAgentIdentityCharacters()
+    {
+        await using var scope = await IdentityTestScope.CreateAsync();
+        var service = scope.ServiceProvider.GetRequiredService<IUserService>();
+
+        var created = await service.RegisterAgentAsync(new RegisterAgentRequest(
+            "agent:research",
+            "Research Agent"));
+
+        Assert.Equal("agent:research", created.Username);
+        Assert.Equal("Research Agent", created.DisplayName);
+        Assert.Equal(ParticipantType.Agent, created.ParticipantType);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_RemovesStoredUser()
+    {
+        await using var scope = await IdentityTestScope.CreateAsync();
+        var service = scope.ServiceProvider.GetRequiredService<IUserService>();
+        var created = await service.CreateAsync(new CreateUserRequest(
+            "dana",
+            "Dana D",
+            "dana@example.com",
+            "password123"));
+
+        await service.DeleteAsync(created.Id);
+
+        Assert.Null(await service.GetByIdAsync(created.Id));
+        Assert.Empty(await service.ListAsync());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ThrowsWhenUserMissing()
+    {
+        await using var scope = await IdentityTestScope.CreateAsync();
+        var service = scope.ServiceProvider.GetRequiredService<IUserService>();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.DeleteAsync(Guid.NewGuid()));
+
+        Assert.Equal("User not found.", exception.Message);
+    }
+
     private sealed class IdentityTestScope : IAsyncDisposable
     {
         private readonly SqliteConnection _connection;
@@ -77,12 +121,7 @@ public class UserServiceTests
             services
                 .AddIdentityCore<User>(options =>
                 {
-                    options.Password.RequireDigit = false;
-                    options.Password.RequiredLength = 4;
-                    options.Password.RequireNonAlphanumeric = false;
-                    options.Password.RequireUppercase = false;
-                    options.Password.RequireLowercase = false;
-                    options.User.RequireUniqueEmail = true;
+                    options.ConfigureMauiMessengerIdentity();
                 })
                 .AddRoles<IdentityRole<Guid>>()
                 .AddEntityFrameworkStores<AppDbContext>();

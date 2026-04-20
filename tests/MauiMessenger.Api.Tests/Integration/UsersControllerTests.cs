@@ -53,4 +53,28 @@ public class UsersControllerTests : IClassFixture<ApiWebApplicationFactory>
         Assert.NotNull(user);
         Assert.Equal("charlie", user!.Username);
     }
+
+    [Fact]
+    public async Task DeleteUser_RemovesUser()
+    {
+        var createRequest = new CreateUserRequest("delete-me", "Delete Me", "delete-me@example.com", "password123");
+        var createResponse = await _client.PostAsJsonAsync("/api/users", createRequest);
+        createResponse.EnsureSuccessStatusCode();
+        var created = await createResponse.Content.ReadFromJsonAsync<UserDto>();
+        Assert.NotNull(created);
+
+        var deleteResponse = await _client.DeleteAsync($"/api/users/{created!.Id}");
+
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+        var getResponse = await _client.GetAsync($"/api/users/{created.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteUser_ReturnsNotFound_WhenUserMissing()
+    {
+        var response = await _client.DeleteAsync($"/api/users/{Guid.NewGuid()}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 }
