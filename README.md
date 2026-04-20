@@ -2,6 +2,8 @@
 
 This is a 90% ChatGPT Codex-written repository.
 
+[![CI](https://github.com/terracotta004/MauiMessenger/actions/workflows/dotnet.yml/badge.svg)](https://github.com/terracotta004/MauiMessenger/actions/workflows/dotnet.yml)
+
 Add an .env file with these contents to set up the database:
 
 ```text
