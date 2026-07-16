@@ -2,7 +2,7 @@
 
 This is a 90% ChatGPT Codex-written repository.
 
-On July 16, 2026, I started adding Codex co-author attribution to commit messages.
+On July 16, 2026, I started adding Codex co-author attribution to commit messages. It didn't work initially, but it should work now.
 
 Add an .env file with these contents to set up the database:
 
