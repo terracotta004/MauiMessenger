@@ -2,6 +2,8 @@
 
 This is a 90% ChatGPT Codex-written repository.
 
+[![CI](https://github.com/terracotta004/MauiMessenger/actions/workflows/dotnet.yml/badge.svg)](https://github.com/terracotta004/MauiMessenger/actions/workflows/dotnet.yml)
+
 On July 16, 2026, I started adding Codex co-author attribution to commit messages. It didn't work initially, but it should work now. Attempt: 3.
 
 Add an .env file with these contents to set up the database:
